@@ -1,10 +1,14 @@
 #include "main.hpp"
 #include <iostream>
-//#include <CImg.h>
-//#include <cmath>
 #include <gtest/gtest.h>
 #include <algorithm>
 #include <vector>
+
+
+void Object2D::move(const Line& line)
+{
+	set_position(get_position() + line.get_stop() - line.get_start());
+}
 
 
 Point::Point(float _x = 0.f, float _y = 0.f)
@@ -24,20 +28,16 @@ Point Point::operator-(const Point& p)
 	return Point(x - p.x, y - p.y);
 }
 
+Point Point::operator*(const float f)
+{
+	return Point(f * x, f * y);
+}
+
 void Point::draw_shape(Canvas& canvas)
 {
-	/*canvas.get_drawer().circle(
-		int(round(x * canvas.get_px_ratio_w())),
-		int(round(y * canvas.get_px_ratio_h())),
-		2);*/
 	canvas.get_drawer().plot_pixel(
 		int(round(x * canvas.get_px_ratio_w())), 
 		int(round(y * canvas.get_px_ratio_h())));
-}
-
-void Point::move(const Line& line) {
-	this->x += line.dx();
-	this->y += line.dy();
 }
 
 float matrix2d::det(float a, float b, float c, float d) {
@@ -77,7 +77,6 @@ Point InfLine::intersection(const InfLine &ifL) {
 	p.y = matrix2d::det(this->A, ifL.A, this->C, ifL.C) / matrix2d::det(this->B, ifL.B, this->A, ifL.A);
 	return p;
 }
-
 
 bool Line::operator==(const Line& l)
 {
@@ -158,20 +157,6 @@ Line Line::intersection(Line line) {
 		break;
 	}
 	}
-	/*try
-	{
-		throw NoIntersectionException();
-	}
-	catch (const NoIntersectionException& e)
-	{
-		std::cout << "Exception: " << e.what() << std::endl;
-	}*/
-}
-
-void Line::move(const Line& line)
-{
-	start.move(line);
-	stop.move(line);
 }
 
 void Line::draw_shape(Canvas& canvas)
@@ -185,10 +170,8 @@ void Line::draw_shape(Canvas& canvas)
 		);
 }
 
-
 /*
 TODO:
- - try implementing image::resize(float)
 
  DONE:
  - Line::intersection method - no intersection results in nullptr
@@ -201,13 +184,13 @@ TODO:
    saving to a file.
  - resolve pyramids color problem
  - implement get_area() for pyramids classes
+ - try implementing image::resize(float)
 
 */
 
 
 int main() {
-
-	Canvas c1(500, 500, 10, 10);
+	Canvas canvas(200, 200, 10, 10);
 	int base_1 = 10, base_2 = 6;
 	StepPyramid p1(0, 0, base_2, 5, 10);
 	SymmetricPyramid p2(base_2, 0, base_1 - base_2, 5);
@@ -216,11 +199,24 @@ int main() {
 	p2.set_color(255, 223, 64);
 	p3.set_color(255, 255, 64);
 	
-	Image img1;
-	img1.add(p3).add(p2).add(p1);
-	//img.resize(1.f);
-	img1.draw(c1);
-	c1.save("pyramids.png");
+	Image img;
+	img.add(p3).add(p2).add(p1);
+	img.resize(1.f);
+	img.draw(canvas);
+	canvas.save("pyramids.png");
+
+	Canvas c1(500, 500, 10, 10);
+	Canvas c2(500, 500, 10, 10);
+	Canvas c3(500, 500, 10, 10);
+	img.draw(c1);
+	img.resize(1.5f);
+	img.draw(c2);
+	img.resize(0.5f);
+	p2.move(Line(0.f, 0.f, 2.f, 1.f));
+	img.draw(c3);
+	c1.save("pyr1.png");
+	c2.save("pyr2.png");
+	c3.save("pyr3.png");
 
 	/*Canvas c(300, 300, 10, 10);
 	Line l1(1, 1, 8, 1);
@@ -233,66 +229,41 @@ int main() {
 	img.add(l1).add(l2).add(p1);
 	img.draw(c);
 	c.save("out1.bmp");*/
-	//bitmap_image image(600, 400);
-	//image.set_all_channels(240, 240, 240);
-	//image_drawer draw(image);
-	//draw.pen_width(3);
-	//draw.pen_color(240, 240, 20);
-	////draw.circle(100, 100, 70);
-	////symmetric_pyramid(draw, 100, 100, 300, 300);
-	//draw.pen_color(240, 120, 20);
-	////equilateral_pyramid(draw, 150, 100, 250);
-	//step_pyramid(draw, 60, 60, 200, 250, 10);
-	//step_pyramid(draw, 300, 60, 250, 250, 5);
-	////draw.pen_width(3);
-	////draw.pen_color(100, 255, 100);
-	////draw.rectangle(50, 50, 150, 120);
-	////draw_circled_line(draw, 100, 550, 500, 200, 20);
-	//image.vertical_flip();
 	//image.save_image("output2.bmp");
 	
-	testing::InitGoogleTest();
-	RUN_ALL_TESTS();
+	//testing::InitGoogleTest();
+	//RUN_ALL_TESTS();
 	return 0;
 }
 
-void Pyramid::draw_shape(Canvas& canvas)
+void SymmetricPyramid::draw_shape_own(Canvas& canvas)
 {
-	Line base(x, y, x + base_length, y);
-	base.draw_shape(canvas);
-}
-
-void SymmetricPyramid::draw_shape(Canvas& canvas)
-{
-	Pyramid::draw_shape(canvas);
-	float top_x = x + base_length / 2.f;
-	float top_y = y + height;
-	Line left(x, y, top_x, top_y);
-	Line right(x + base_length, y, top_x, top_y);
+	float top_x = start.x + base_length / 2.f;
+	float top_y = start.y + height;
+	Line left(start.x, start.y, top_x, top_y);
+	Line right(start.x + base_length, start.y, top_x, top_y);
 	left.draw_shape(canvas);
 	right.draw_shape(canvas);
 }
 
-void EquilateralPyramid::draw_shape(Canvas& canvas)
+void EquilateralPyramid::draw_shape_own(Canvas& canvas)
 {
-	Pyramid::draw_shape(canvas);
-	float top_x = x + base_length / 2.f;
-	float top_y = y + sqrt_3div2 * base_length;
-	Line left(x, y, top_x, top_y);
-	Line right(x + base_length, y, top_x, top_y);
+	float top_x = start.x + base_length / 2.f;
+	float top_y = start.y + sqrt_3div2 * base_length;
+	Line left(start.x, start.y, top_x, top_y);
+	Line right(start.x + base_length, start.y, top_x, top_y);
 	left.draw_shape(canvas);
 	right.draw_shape(canvas);
 }
 
-void StepPyramid::draw_shape(Canvas& canvas)
+void StepPyramid::draw_shape_own(Canvas& canvas)
 {
-	Pyramid::draw_shape(canvas);
 	float dx = base_length / (2.f * step_num);
 	float dy = height / (float)step_num;
-	float x05 = x + dx / 2.f;
-	float xn05 = x + base_length - dx / 2.f;
+	float x05 = start.x + dx / 2.f;
+	float xn05 = start.x + base_length - dx / 2.f;
 	for (int i = 0; i < step_num; i++) {
-		float y_i = y + dy * (i + 1);
+		float y_i = start.y + dy * (i + 1);
 		Line (x05 + dx * i, y_i, x05 + dx * (i+1), y_i).draw_shape(canvas);
 		Line (xn05 - dx * i, y_i, xn05 - dx * (i + 1), y_i).draw_shape(canvas);
 		float x_i = x05 + dx * i;

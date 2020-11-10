@@ -7,7 +7,6 @@
 struct Point;
 class Line;
 
-
 class Canvas {
 	bitmap_image btp_image;
 	image_drawer* drawer;
@@ -50,8 +49,6 @@ public:
 	}
 };
 
-
-
 class Object2D {
 	struct Color {
 		int r, g, b;
@@ -68,27 +65,30 @@ public:
 		draw_shape(canvas);
 	}
 	virtual Point get_position() = 0;
-	virtual void move(const Line& line) = 0;
+	virtual void set_position(const Point& p) = 0;
+	virtual void move(const Line& line);
 	virtual float get_area() = 0;
 	void set_color(int r, int g, int b) {
 		color.r = r;
 		color.g = g;
 		color.b = b;
 	}
+	virtual void resize(float scale) = 0;
 };
 
 
 struct Point : public Object2D{
-//public:
 	float x;
 	float y;
 	Point(float, float);
 	bool operator ==(const Point& p);
 	Point operator +(const Point& p);
 	Point operator -(const Point& p);
+	Point operator *(const float f);
 	virtual Point get_position() { return *this; }
-	virtual void move(const Line& line);
+	virtual void set_position(const Point& p) { *this = p; }
 	virtual float get_area() { return 0.f; };
+	virtual void resize(float scale) { return; }
 	/*float getX() const;
 	float getY() const;
 	void setX(float _x);
@@ -97,6 +97,7 @@ private:
 	virtual void draw_shape(Canvas& canvas);
 };
 
+// Structure for arithmetic operations on 2x2 matrices
 struct matrix2d {
 	static float det(float a, float b, float c, float d);
 	static float det(Point P1, Point P2);
@@ -124,14 +125,20 @@ public:
 	float len();
 	Line intersection(Line line);
 	virtual void draw_shape(Canvas& canvas);
-	virtual void move(const Line& line);
-	virtual Point get_position() {
-		return start.get_position();
+	virtual Point get_position() { return start.get_position(); }
+	virtual void set_position(const Point& p) { 
+		stop = Point(p) + stop - start;
+		start = p;
 	}
 	virtual float get_area() { return 0.f; }
+	virtual void resize(float scale) {
+		stop.x = start.x + scale * dx();
+		stop.y = start.y + scale * dy();
+	}
 };
 
 // Structure representing an infinite line
+// used in Line::intersection()
 class InfLine {
 	friend class Line;
 
@@ -167,24 +174,37 @@ struct NoIntersectionException : public std::exception {
 
 
 class Pyramid : public Object2D {
+	virtual void draw_shape(Canvas& canvas) {
+			// draw base (common for all pyramids)
+			Line base(start.x, start.y, start.x + base_length, start.y);
+			base.draw_shape(canvas);
+			draw_shape_own(canvas);
+		}
 protected:
-	float x, y;
+	Point start;
 	float base_length;
-	virtual void draw_shape(Canvas& canvas);
+	// draws individual elements of each inherited pyramid class
+	virtual void draw_shape_own(Canvas& canvas) = 0;
+	// rescales individual elements of each inherited pyramid
+	virtual void resize_own(float scale) = 0;
+	virtual void resize(float scale) {
+		// rescale base (common for all pyramids)
+		base_length *= scale;
+		resize_own(scale);
+	}
 
 public:
 	Pyramid(float _x, float _y, float _base_length)
-		: x(_x), y(_y), base_length(_base_length) {}
+		: start(_x, _y), base_length(_base_length) {}
 
 	virtual Point get_position() {
-		return Point(x, y);
-	}
-	
-	virtual void move(const Line& line) {
-		x += line.dx(), y += line.dy();
+		return start;
 	}
 
-	virtual void resize(float scale) {}
+	virtual void set_position(const Point& p) {
+		start = p;
+	}
+	
 	virtual float get_area() = 0;
 
 	void set_base_length(float width) {
@@ -200,7 +220,7 @@ public:
 
 class SymmetricPyramid : public Pyramid {
 	float height;
-	virtual void draw_shape(Canvas& canvas);
+	virtual void draw_shape_own(Canvas& canvas);
 
 public:
 	SymmetricPyramid(float x, float y, float _base_length, float _height)
@@ -217,11 +237,15 @@ public:
 		return 0.5f * height * base_length;
 	}
 
+	virtual void resize_own(float scale) {
+		height *= scale;
+	}
+
 };
 
 class EquilateralPyramid : public Pyramid {
 	const float sqrt_3div2 = 0.866f;
-	virtual void draw_shape(Canvas& canvas);
+	virtual void draw_shape_own(Canvas& canvas);
 
 public:
 	EquilateralPyramid(float x, float y, float side_length)
@@ -230,12 +254,14 @@ public:
 	virtual float get_area() {
 		return 0.5f * sqrt_3div2 * base_length * base_length;
 	}
+
+	virtual void resize_own(float scale) { return; }
 };
 
 class StepPyramid : public Pyramid {
 	float height;
 	int step_num;
-	virtual void draw_shape(Canvas& canvas);
+	virtual void draw_shape_own(Canvas& canvas);
 public:
 	StepPyramid(float x, float y, float _base_length, float _height, int _step_num)
 		:Pyramid(x, y, _base_length), height(_height), step_num(_step_num) {}
@@ -259,6 +285,10 @@ public:
 		return area;*/
 	}
 
+	virtual void resize_own(float scale) {
+		height *= scale;
+	}
+
 };
 
 class Image {
@@ -276,4 +306,12 @@ public:
 		}
 	}
 
+	void resize(float scale) {
+		for (Object2D* obj : objects) {
+			// scale object's position
+			obj->set_position(obj->get_position() * scale);
+			// scale object itself
+			obj->resize(scale);
+		}
+	}
 };
