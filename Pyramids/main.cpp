@@ -188,11 +188,6 @@ void Line::draw_shape(Canvas& canvas)
 
 /*
 TODO:
- * Run the first version of program with drawing chosen pyramids types on the canvas and
-   saving to a file.
- - resolve pyramids color problem
- - complete StepPyramid drawing
- - implement get_area() for pyramids classes
  - try implementing image::resize(float)
 
  DONE:
@@ -201,76 +196,31 @@ TODO:
  - define Canvas class
 - use a Graphical2DObject class to represent any object that can be drawn
 	which will be inherited by Pyramid, Line and Point
- 
+ - complete StepPyramid drawing
+ * Run the first version of program with drawing chosen pyramids types on the canvas and
+   saving to a file.
+ - resolve pyramids color problem
+ - implement get_area() for pyramids classes
+
 */
-
-
-
-
-
-
-// Test functions - only for implementation of desired shapes
-
-void draw_circled_line(image_drawer &draw, int x0, int y0, int x1, int y1, int p) {
-	float x(x0), y(y0);
-	float dx = (x1 - x0) / (float)p;
-	float dy = (y1 - y0) / (float)p;
-	for (int i = 0; i < p; i++) {
-		x += dx, y += dy;
-		draw.circle(round(x), round(y), 4);
-		//img.set_pixel(unsigned int(round(x)), unsigned int(round(y)), jet_colormap[50]);
-	}
- }
-
-void symmetric_pyramid(image_drawer& draw, int x0, int y0, int base, int height) {
-	int x1 = x0 + base;
-	draw.horiztonal_line_segment(x0, x1, y0);
-	int x_top = x0 + base / 2;
-	int y_top = y0 + height;
-	draw.line_segment(x0, y0, x_top, y_top);
-	draw.line_segment(x1, y0, x_top, y_top);	
-}
-
-void equilateral_pyramid(image_drawer& draw, int x0, int y0, int side) {
-	int x1 = x0 + side;
-	draw.horiztonal_line_segment(x0, x1, y0);
-	int x_top = x0 + side / 2;
-	int y_top = round(y0 + 0.866 * side);
-	draw.line_segment(x0, y0, x_top, y_top);
-	draw.line_segment(x1, y0, x_top, y_top);
-}
-
-void step_pyramid(image_drawer& draw, int x0, int y0, int base, int height, int n_steps) {
-	float dx = base / (2.f * n_steps);
-	float dy = height / (float)n_steps;
-	draw.horiztonal_line_segment(x0, x0 + base, y0);
-	float x05 = x0 + dx / 2.f;
-	float xn05 = x0 + base - dx / 2.f;
-	for (int i = 0; i < n_steps; i++) {
-		draw.vertical_line_segment(round(y0 + dy * i), round(y0 + dy * (i + 1)), round(x05 + dx * i));
-		draw.vertical_line_segment(round(y0 + dy * i), round(y0 + dy * (i + 1)), round(xn05 - dx * i));
-		draw.horiztonal_line_segment(round(x05 + dx * i), round(x05 + dx * (i + 1)), round(y0 + dy * (i + 1)));
-		draw.horiztonal_line_segment(round(xn05 - dx * i), round(xn05 - dx * (i + 1)), round(y0 + dy * (i + 1)));
-	}
-}
 
 
 int main() {
 
-	Canvas c1(200, 200, 10, 10);
+	Canvas c1(500, 500, 10, 10);
 	int base_1 = 10, base_2 = 6;
-	//StepPyramid p1(0, 0, base_2, 5, 10);
+	StepPyramid p1(0, 0, base_2, 5, 10);
 	SymmetricPyramid p2(base_2, 0, base_1 - base_2, 5);
 	EquilateralPyramid p3(0, 0, base_1);
-	//p1.set_color(255, 191, 64);
+	p1.set_color(255, 191, 64);
 	p2.set_color(255, 223, 64);
 	p3.set_color(255, 255, 64);
 	
 	Image img1;
-	img1.add(p3).add(p2);
+	img1.add(p3).add(p2).add(p1);
 	//img.resize(1.f);
 	img1.draw(c1);
-	c1.save("pyramids.bmp");
+	c1.save("pyramids.png");
 
 	/*Canvas c(300, 300, 10, 10);
 	Line l1(1, 1, 8, 1);
@@ -300,8 +250,7 @@ int main() {
 	////draw_circled_line(draw, 100, 550, 500, 200, 20);
 	//image.vertical_flip();
 	//image.save_image("output2.bmp");
-
-
+	
 	testing::InitGoogleTest();
 	RUN_ALL_TESTS();
 	return 0;
@@ -309,17 +258,17 @@ int main() {
 
 void Pyramid::draw_shape(Canvas& canvas)
 {
-	Line base(x, y, x + base_width, y);
-	base.draw(canvas);
+	Line base(x, y, x + base_length, y);
+	base.draw_shape(canvas);
 }
 
 void SymmetricPyramid::draw_shape(Canvas& canvas)
 {
 	Pyramid::draw_shape(canvas);
-	float top_x = x + base_width / 2.f;
+	float top_x = x + base_length / 2.f;
 	float top_y = y + height;
 	Line left(x, y, top_x, top_y);
-	Line right(x + base_width, y, top_x, top_y);
+	Line right(x + base_length, y, top_x, top_y);
 	left.draw_shape(canvas);
 	right.draw_shape(canvas);
 }
@@ -327,10 +276,10 @@ void SymmetricPyramid::draw_shape(Canvas& canvas)
 void EquilateralPyramid::draw_shape(Canvas& canvas)
 {
 	Pyramid::draw_shape(canvas);
-	float top_x = x + base_width / 2.f;
-	float top_y = y + sqrt_3div2 * base_width;
+	float top_x = x + base_length / 2.f;
+	float top_y = y + sqrt_3div2 * base_length;
 	Line left(x, y, top_x, top_y);
-	Line right(x + base_width, y, top_x, top_y);
+	Line right(x + base_length, y, top_x, top_y);
 	left.draw_shape(canvas);
 	right.draw_shape(canvas);
 }
@@ -338,5 +287,17 @@ void EquilateralPyramid::draw_shape(Canvas& canvas)
 void StepPyramid::draw_shape(Canvas& canvas)
 {
 	Pyramid::draw_shape(canvas);
-
+	float dx = base_length / (2.f * step_num);
+	float dy = height / (float)step_num;
+	float x05 = x + dx / 2.f;
+	float xn05 = x + base_length - dx / 2.f;
+	for (int i = 0; i < step_num; i++) {
+		float y_i = y + dy * (i + 1);
+		Line (x05 + dx * i, y_i, x05 + dx * (i+1), y_i).draw_shape(canvas);
+		Line (xn05 - dx * i, y_i, xn05 - dx * (i + 1), y_i).draw_shape(canvas);
+		float x_i = x05 + dx * i;
+		float xn_i = xn05 - dx * i;
+		Line (x_i, y_i - dy, x_i, y_i).draw_shape(canvas);
+		Line (xn_i, y_i - dy, xn_i, y_i).draw_shape(canvas);
+	}
 }

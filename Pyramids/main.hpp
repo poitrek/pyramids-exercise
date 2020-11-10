@@ -169,12 +169,12 @@ struct NoIntersectionException : public std::exception {
 class Pyramid : public Object2D {
 protected:
 	float x, y;
-	float base_width;
+	float base_length;
 	virtual void draw_shape(Canvas& canvas);
 
 public:
-	Pyramid(float _x, float _y, float _base_width)
-		: x(_x), y(_y), base_width(_base_width) {}
+	Pyramid(float _x, float _y, float _base_length)
+		: x(_x), y(_y), base_length(_base_length) {}
 
 	virtual Point get_position() {
 		return Point(x, y);
@@ -185,14 +185,14 @@ public:
 	}
 
 	virtual void resize(float scale) {}
-	virtual float get_area() { return 0.f; }
+	virtual float get_area() = 0;
 
-	void set_base_width(float width) {
-		base_width = width;
+	void set_base_length(float width) {
+		base_length = width;
 	}
 
-	float get_base_width() {
-		return base_width;
+	float get_base_length() {
+		return base_length;
 	}
 
 };
@@ -203,14 +203,18 @@ class SymmetricPyramid : public Pyramid {
 	virtual void draw_shape(Canvas& canvas);
 
 public:
-	SymmetricPyramid(float x, float y, float _base_width, float _height)
-		:Pyramid(x, y, _base_width), height(_height) {}
+	SymmetricPyramid(float x, float y, float _base_length, float _height)
+		:Pyramid(x, y, _base_length), height(_height) {}
 
 	void set_height(float _height) {
 		height = _height;
 	}
 	float get_height() {
 		return height;
+	}
+
+	virtual float get_area() {
+		return 0.5f * height * base_length;
 	}
 
 };
@@ -222,6 +226,10 @@ class EquilateralPyramid : public Pyramid {
 public:
 	EquilateralPyramid(float x, float y, float side_length)
 		:Pyramid(x, y, side_length) {}
+
+	virtual float get_area() {
+		return 0.5f * sqrt_3div2 * base_length * base_length;
+	}
 };
 
 class StepPyramid : public Pyramid {
@@ -239,8 +247,19 @@ public:
 		return height;
 	}
 
-};
+	virtual float get_area() {
+		float dx = base_length / (2.f * step_num);
+		float dy = height / (float)step_num;
+		return dx * dy * step_num * step_num;
+		/// Inefficient AS F*
+		/*float area = 0.f;
+		for (int i = 0; i < step_num; i++) {
+			area += dy * dx * (2 * i + 1);
+		}
+		return area;*/
+	}
 
+};
 
 class Image {
 	std::vector<Object2D*> objects;

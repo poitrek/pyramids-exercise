@@ -103,3 +103,18 @@ TEST(LineTest, Intersection7) {
 	Line intrsct = l1.intersection(l2);
 	EXPECT_TRUE(intrsct == l1);
 }
+
+TEST(PyramidTest, AreaTest1) {
+	SymmetricPyramid sp(0.f, 0.f, 4.f, 5.f);
+	EXPECT_FLOAT_EQ(10.f, sp.get_area());
+}
+
+TEST(PyramidTest, AreaTest2) {
+	EquilateralPyramid ep(0.f, 0.f, 4.f);
+	EXPECT_FLOAT_EQ(6.928f, ep.get_area());
+}
+
+TEST(PyramidTest, AreaTest3) {
+	StepPyramid stp(0.f, 0.f, 6.f, 6.f, 3);
+	EXPECT_FLOAT_EQ(18.f, stp.get_area());
+}
