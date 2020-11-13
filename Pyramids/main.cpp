@@ -110,10 +110,10 @@ Line Line::intersection(Line line) {
 	{
 	case InfLine::posType::intersect: {
 		Point s = il1.intersection(il2);
-		float x1 = fmin(this->get_start().x, this->get_stop().x);
-		float x2 = fmax(this->get_start().x, this->get_stop().x);
-		float x3 = fmin(line.get_start().x, line.get_stop().x);
-		float x4 = fmax(line.get_start().x, line.get_stop().x);
+		float x1 = fmin(this->start.x, this->stop.x);
+		float x2 = fmax(this->start.x, this->stop.x);
+		float x3 = fmin(line.start.x, line.stop.x);
+		float x4 = fmax(line.start.x, line.stop.x);
 		if (s.x >= x1 && s.x <= x2 && s.x >= x3 && s.x <= x4)
 			return Line(s, s);
 		else
@@ -124,10 +124,10 @@ Line Line::intersection(Line line) {
 		std::vector<Line> lines;
 		lines.push_back(*this);
 		lines.push_back(line);
-		lines.push_back(Line(this->get_start(), line.get_start()));
-		lines.push_back(Line(this->get_start(), line.get_stop()));
-		lines.push_back(Line(this->get_stop(), line.get_start()));
-		lines.push_back(Line(this->get_stop(), line.get_stop()));
+		lines.push_back(Line(this->start, line.start));
+		lines.push_back(Line(this->start, line.stop));
+		lines.push_back(Line(this->stop, line.start));
+		lines.push_back(Line(this->stop, line.stop));
 		// Get the longest line segment
 		std::vector<Line>::iterator maxLine = std::max_element(lines.begin(), lines.end(),
 			[](Line l1, Line l2) {return l1.len() < l2.len(); });
